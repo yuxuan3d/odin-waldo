@@ -3,6 +3,10 @@
   text-align: center;
 }
 
+p {
+  margin: 0;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -54,4 +58,30 @@
 .navbar-item {
   display: flex;
   gap: 1em;
+}
+
+.select-card {
+  position: fixed;
+  top: 5vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: fit-content;
+  margin: 1em;
+  padding: 1em;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #1e2f8b;
+  overflow: visible;
+  z-index: 10;
+  opacity: 0; 
+  
+}
+
+.select-card.fade-out {
+  opacity: 0; 
+  transition: opacity 0.5s ease-out; 
+}
+
+.select-card.fade-in {
+  opacity: 1; 
 }

@@ -7,6 +7,19 @@ function App() {
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [selectedPokemon, setSelectedPokemon] = useState(null);
   const imageRef = useRef(null); // Ref for the trigger element
+  const [popupVisible, setPopupVisible] = useState(false); // State to control the popup visibility
+  const fadeTimerRef = useRef(null);
+
+  useEffect(() => {
+
+    console.log(document.getElementById('selected'));
+
+    if (popupVisible) {
+      document.getElementById('selected').className = 'select-card fade-out';
+    } else {
+      document.getElementById('selected').className = 'select-card fade-in';
+    }
+  }, [popupVisible]);
 
   const pokemonOptions = ['Pikachu', 'Bulbasaur', 'Charmander', 'Squirtle'];
 
@@ -28,6 +41,15 @@ function App() {
 
   const handleSelectPokemon = (pokemon) => {
     setSelectedPokemon(pokemon);
+
+    setPopupVisible(false)
+    clearTimeout(fadeTimerRef.current);
+
+    fadeTimerRef.current = setTimeout(() => {
+      // Check if card still exists
+      setPopupVisible(true); // Start the fade
+      
+    }, 3000);
   };
 
   const handleCloseDropdown = () => {
@@ -37,16 +59,18 @@ function App() {
   return (
     <>
       <body>
-        <div class="navbar">
-          <div class="navbar-item">
-            <h1 class="navbar-title">Where's that Pokemon?</h1>
+        <div className="navbar">
+          <div className="navbar-item">
+            <h1 className="navbar-title">Where's that Pokemon?</h1>
           </div>
-          <div class="navbar-item">
-            <button class="navbar-button">Start</button>
-            <button class="navbar-button">Leaderboard</button>
+          <div className="navbar-item">
+            <button className="navbar-button">Start</button>
+            <button className="navbar-button">Leaderboard</button>
           </div>
         </div>
-        {selectedPokemon && <p>You selected: {selectedPokemon}</p>}
+        
+          <div className='select-card' id='selected'>{selectedPokemon && <p>You selected: {selectedPokemon}</p>}</div>
+        
         <img 
           ref={imageRef} // Assign ref here
           src="pokemon.jpg" 
