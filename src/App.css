@@ -73,15 +73,12 @@ p {
   background-color: #1e2f8b;
   overflow: visible;
   z-index: 10;
-  opacity: 0; 
-  
+  opacity: 1; 
+  visibility: visible;
+  transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
 }
 
 .select-card.fade-out {
   opacity: 0; 
-  transition: opacity 0.5s ease-out; 
-}
-
-.select-card.fade-in {
-  opacity: 1; 
+  visibility: hidden;
 }
