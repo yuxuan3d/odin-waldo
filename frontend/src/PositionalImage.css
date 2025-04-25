@@ -17,3 +17,13 @@
     pointer-events: none; /* Don't block clicks */
     border-radius: 50%; /* Example: make markers circular */
   }
+
+
+  .image-marker { /* Style for the new image markers */
+    position: absolute;
+    width: 5em; /* Adjust size as needed */
+    height: 5em; /* Adjust size as needed */
+    transform: translate(-50%, -50%); /* Center the image */
+    pointer-events: none; /* Prevent blocking clicks */
+    /* Add any other styles like box-shadow if desired */
+  }

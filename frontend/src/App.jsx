@@ -28,26 +28,10 @@ function App() {
 
   // Pokemon Data State
   const [targetPokemonList, setTargetPokemonList] = useState([]);
-  const [markers, setMarkers] = useState([]);
+  const [foundPokemonMarkers, setFoundPokemonMarkers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-
-useEffect(() => {
-  if (targetPokemonList.length > 0) {
-    setMarkers(
-      targetPokemonList.map(p => ({
-        id: p.id.toString(), // Use DB id as key (convert to string if needed)
-        xPercent: p.xPercent,
-        yPercent: p.yPercent,
-        size: 125,
-        color: 'rgba(255, 0, 0, 0.4)'
-      }))
-    );
-  } else {
-    setMarkers([]); // Clear markers if list is empty
-  }
-}, [targetPokemonList]);
 
   // Refs
   const imageRef = useRef(null);
@@ -105,14 +89,13 @@ useEffect(() => {
             xPercent: p.xPercent,
             yPercent: p.yPercent,
             tolerance: p.tolerance,
-            // Add found: false if needed for game logic (though we remove items now)
         }));
-        setTargetPokemonList(validatedData); // Update state with fetched data
+        setTargetPokemonList(validatedData); 
       } catch (e) {
         console.error("Failed to fetch Pokemon data:", e);
-        setError(e.message); // Set error state
+        setError(e.message); 
       } finally {
-        setIsLoading(false); // End loading regardless of success/failure
+        setIsLoading(false); 
       }
     };
 
@@ -142,21 +125,42 @@ useEffect(() => {
   }, [isRunning])
 
   const handleDropdownSelection = (chosenPokemon) => {
+    let foundPokemonDetails = null;
+
     if (clickedTargetPokemonName && chosenPokemon === clickedTargetPokemonName) {
-      if (targetPokemonList.length === 1) {
-        displayMessageCard(`Congratulations! You found all Pokemon!`)
-        // Stop timer, show final score, etc.
-        setIsRunning(false)
+      foundPokemonDetails = targetPokemonList.find(p => p.name === chosenPokemon);
+    
+    
+      if (clickedTargetPokemonName && chosenPokemon === clickedTargetPokemonName) {
+        if (targetPokemonList.length === 1) {
+          displayMessageCard(`Congratulations! You found all Pokemon!`)
+          // Stop timer, show final score, etc.
+          setIsRunning(false)
+          const newMarker = {
+            id: `found-${foundPokemonDetails.id}`, // Create a unique ID for the marker
+            xPercent: foundPokemonDetails.xPercent,
+            yPercent: foundPokemonDetails.yPercent,
+            imgSrc: '/marker.png' // Path to your marker image in the public folder
+          };
+          setFoundPokemonMarkers(prevMarkers => [...prevMarkers, newMarker]);
+        } else {
+          // Correct Pokemon chosen for the clicked target location
+          displayMessageCard(`Correct! Found ${chosenPokemon}`)
+          const newMarker = {
+            id: `found-${foundPokemonDetails.id}`, // Create a unique ID for the marker
+            xPercent: foundPokemonDetails.xPercent,
+            yPercent: foundPokemonDetails.yPercent,
+            imgSrc: '/marker.png' // Path to your marker image in the public folder
+          };
+          setFoundPokemonMarkers(prevMarkers => [...prevMarkers, newMarker]);
+        }
+        // Update the target list to mark as found
+        setTargetPokemonList(prevList =>
+          prevList.filter(p => p.name !== chosenPokemon)
+        );
       } else {
-        // Correct Pokemon chosen for the clicked target location
-        displayMessageCard(`Correct! Found ${chosenPokemon}`)
+        displayMessageCard(`Miss!`);
       }
-      // Update the target list to mark as found
-      setTargetPokemonList(prevList =>
-        prevList.filter(p => p.name !== chosenPokemon)
-      );
-    } else {
-      displayMessageCard(`Miss!`);
     }
 
     setDropdownVisible(false);
@@ -194,6 +198,14 @@ useEffect(() => {
 
     setDropdownVisible(true);
   };
+
+  if (isLoading) {
+    return <div>Loading Pokemon...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading Pokemon: {error}</div>;
+  }
   
 
   return (
@@ -219,7 +231,7 @@ useEffect(() => {
         <PositionableImage
           src="pokemon.jpg"
           alt="pokemon"
-          markers={markers}
+          markers={foundPokemonMarkers}
           onImageClick={handleImageClick} 
         />
       </div>

@@ -33,16 +33,14 @@ function PositionableImage({ src, alt, markers = [], onImageClick }) {
           onClick={handleInternalImageClick}
         />
         {markers.map((marker) => (
-          <div
+          <img
             key={marker.id} // Need a unique key
-            className="marker"
+            src='marker.png' // Path to your marker image
+            alt="marker"
+            className="image-marker"
             style={{
               top: `${marker.yPercent}%`,
               left: `${marker.xPercent}%`,
-              width: marker.size ? `${marker.size}px` : '15px', // Default size
-              height: marker.size ? `${marker.size}px` : '15px',
-              backgroundColor: marker.color || 'rgba(180, 55, 218, 0.6)', // Default color
-              // Add other styles like border based on marker props if needed
             }}
           />
         ))}
