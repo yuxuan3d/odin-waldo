@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import DropdownMenu from './DropdownMenu.jsx'
+import PositionableImage from './PositionalImage.jsx'
 
 const formatTime = (timeMs) => {
   const milliseconds = String(timeMs % 1000).padStart(3, '0');
@@ -14,15 +15,33 @@ function App() {
   // State
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
-  const [selectedPokemon, setSelectedPokemon] = useState(null);
+  const [selectedPokemonMessage, setSelectedPokemonMessage] = useState(null); //
+  const [clickedTargetPokemonName, setClickedTargetPokemonName] = useState(null);
 
   // Card fade State
   const [isCardVisible, setIsCardVisible] = useState(false); 
   const [isFadingOut, setIsFadingOut] = useState(false);
 
   // Timer State
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState(true);
   const [timeElapsed, setTimeElapsed] = useState(0);
+
+
+  const [targetPokemonList, setTargetPokemonList] = useState([
+    { name: "Exeggutor", xPercent: 49.5, yPercent: 43, tolerance: 3, id: 'target-1', found: false },
+    { name: "Slowpoke", xPercent: 84, yPercent: 85.5, tolerance: 3, id: 'target-2', found: false },
+    { name: "Snorlax", xPercent: 58.5, yPercent: 29, tolerance: 2, id: 'target-3', found: false },
+  ]);
+
+  const [markers, setMarkers] = useState(
+    targetPokemonList.map(p => ({
+        id: p.id,
+        xPercent: p.xPercent,
+        yPercent: p.yPercent,
+        size: 125, // Example size
+        color: 'rgba(255, 0, 0, 0.4)' // Example color
+    }))
+);
 
   // Refs
   const imageRef = useRef(null);
@@ -31,8 +50,8 @@ function App() {
   const intervalRef = useRef(null); 
   const startTimeRef = useRef(null); 
   
-  const handleSelectPokemon = (pokemon) => {
-    setSelectedPokemon(pokemon);
+  const displayMessageCard  = (pokemon) => {
+    setSelectedPokemonMessage(pokemon);
     setIsCardVisible(true);
     setIsFadingOut(false); 
 
@@ -48,9 +67,10 @@ function App() {
       removeCardTimerRef.current = setTimeout(() => {
         setIsCardVisible(false); 
         setIsFadingOut(false); 
+        setSelectedPokemonMessage(null);
       }, 500); 
 
-    }, 3000); 
+    }, 2000); 
   };
 
   useEffect(() => {
@@ -59,49 +79,82 @@ function App() {
       clearTimeout(removeCardTimerRef.current);
     };
   }, []);
-  
 
-  const pokemonOptions = ['Pikachu', 'Bulbasaur', 'Charmander', 'Squirtle'];
-
-  const handleImageClick = (event) => {
-    if (dropdownVisible) {
-        if (imageRef.current && imageRef.current.contains(event.target)) {
-           setDropdownVisible(false);
-        }
-        return; 
+  useEffect(() => {
+    if (isRunning) {
+      startTimeRef.current = Date.now()
+      intervalRef.current = setInterval(() => {
+       
+        setTimeElapsed(Date.now() - startTimeRef.current);
+      }, 50); 
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     }
-  
-    setDropdownPosition({ 
-        top: event.pageY, 
-        left: event.pageX 
-    });
-    setDropdownVisible(true);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+  }, [isRunning])
+
+  const handleDropdownSelection = (chosenPokemon) => {
+    if (clickedTargetPokemonName && chosenPokemon === clickedTargetPokemonName) {
+      if (targetPokemonList.length === 1) {
+        displayMessageCard(`Congratulations! You found all Pokemon!`)
+        // Stop timer, show final score, etc.
+        setIsRunning(false)
+      } else {
+        // Correct Pokemon chosen for the clicked target location
+        displayMessageCard(`Correct! Found ${chosenPokemon}`)
+      }
+      // Update the target list to mark as found
+      setTargetPokemonList(prevList =>
+        prevList.filter(p => p.name !== chosenPokemon)
+      );
+    } else {
+      displayMessageCard(`Miss!`);
+    }
+
+    setDropdownVisible(false);
+    setClickedTargetPokemonName(null);
   };
 
   const handleCloseDropdown = () => {
     setDropdownVisible(false);
+    setClickedTargetPokemonName(null)
   };
 
-  const handleStartTimer = () => {
-    if (!isRunning) {
-      setIsRunning(true);
-      startTimeRef.current = Date.now() - timeElapsed; // Adjust for potential pause
-      intervalRef.current = setInterval(() => {
-        const newTime = Date.now() - startTimeRef.current;
-        setTimeElapsed(newTime);
-      }, 50);
-    }
-  };
+  // Handle image clicks
+  const handleImageClick = (clickData) => {
+    let foundTargetName = null;
 
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        console.log("Clearing timer interval on unmount");
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+    for (const targetPokemon of targetPokemonList) {
+      const dx = Math.abs(clickData.clickXPercent - targetPokemon.xPercent);
+      const dy = Math.abs(clickData.clickYPercent - targetPokemon.yPercent);
+
+      // Check if within tolerance (can be rectangular or circular)
+      // Simple rectangular tolerance:
+      if (dx < targetPokemon.tolerance && dy < targetPokemon.tolerance) {
+        foundTargetName = targetPokemon.name;
+        break; // Stop checking once a target is hit
       }
-    };
-  }, []);
+     
+    }
+    setClickedTargetPokemonName(foundTargetName);
+
+    // Always set dropdown position and visibility
+    setDropdownPosition({
+      top: clickData.originalEvent.pageY,
+      left: clickData.originalEvent.pageX
+    });
+
+    setDropdownVisible(true);
+  };
   
 
   return (
@@ -114,35 +167,33 @@ function App() {
             <div id='timer'>
                 {formatTime(timeElapsed)} 
             </div> 
-            <button className="navbar-button" onClick={handleStartTimer}>Start</button>
             <button className="navbar-button">Leaderboard</button>
           </div>
         </div>
         
         {isCardVisible && (
         <div className={`select-card ${isFadingOut ? 'fade-out' : ''}`}>
-          {selectedPokemon && <p>You selected: {selectedPokemon}</p>}
+          {selectedPokemonMessage && <p>You selected: {selectedPokemonMessage}</p>}
         </div>
       )}
-        
-        <img 
-          ref={imageRef}
-          src="pokemon.jpg" 
-          alt="pokemon" 
-          className="pokemon-image" 
-          onClick={handleImageClick} 
-          style={{ cursor: 'pointer' }} 
+        <div> {/* Add a ref container if needed for dropdown closing */}
+        <PositionableImage
+          src="pokemon.jpg"
+          alt="pokemon"
+          markers={markers} // Pass markers array
+          onImageClick={handleImageClick} // Pass the handler
         />
+      </div>
+      
         {dropdownVisible && (
           <DropdownMenu 
-            items={pokemonOptions}
+            items={targetPokemonList.map(p => p.name)} // Use the names of the target Pokemon
             position={dropdownPosition}
-            onSelect={handleSelectPokemon}
+            onSelect={handleDropdownSelection}
             onClose={handleCloseDropdown}
             triggerRef={imageRef}
           />
         )}
-
     </>
   )
 }

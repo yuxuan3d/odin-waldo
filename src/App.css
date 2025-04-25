@@ -58,6 +58,7 @@ p {
 .navbar-item {
   display: flex;
   gap: 1em;
+  align-items: center;
 }
 
 .select-card {
