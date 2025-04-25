@@ -32,6 +32,16 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Form States
+  const [username, setUsername] = useState(''); // For username input
+
+  // Score state
+  const [scoreCardVis, setScoreCardVis] = useState(false); // For score input
+
+  // Leaderboard state
+  const [leaderboard, setLeaderboard] = useState([]); // For leaderboard data
+  const [isLeaderboardVisible, setIsLeaderboardVisible] = useState(false); // For leaderboard visibility
+
 
   // Refs
   const imageRef = useRef(null);
@@ -74,14 +84,12 @@ function App() {
     const fetchPokemonData = async () => {
       setIsLoading(true); // Start loading
       setError(null); // Reset error
-      console.log("Fetching Pokemon data from API...");
       try {
         const response = await fetch('http://localhost:3000/api/pokemon');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        console.log("Data received:", data);
         // Ensure data has the expected fields before setting state
         const validatedData = data.map(p => ({
             id: p.id, // Keep the DB id
@@ -143,6 +151,7 @@ function App() {
             imgSrc: '/marker.png' // Path to your marker image in the public folder
           };
           setFoundPokemonMarkers(prevMarkers => [...prevMarkers, newMarker]);
+          setScoreCardVis(true)
         } else {
           // Correct Pokemon chosen for the clicked target location
           displayMessageCard(`Correct! Found ${chosenPokemon}`)
@@ -206,10 +215,77 @@ function App() {
   if (error) {
     return <div>Error loading Pokemon: {error}</div>;
   }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      const response = await fetch('http://localhost:3000/api/submitScore', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username:username, score: timeElapsed }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('Score submitted:', data);
+      setScoreCardVis(false);
+    } catch (error) {      
+      console.error("Error submitting score:", error);
+      alert('Failed to submit score');
+    }
+
+    // Fetch leaderboard after submitting score
+    try {
+      const response = await fetch('http://localhost:3000/api/leaderboard');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setLeaderboard(data);
+      setIsLeaderboardVisible(true);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      alert('Failed to fetch leaderboard');
+    }
+  }
   
 
   return (
     <>
+      <div className='card-container' style={{ visibility: scoreCardVis ? 'visible' : 'hidden' }}>
+        <div className='score-card'>
+          <form>
+            <div>Your score: {formatTime(timeElapsed)}</div>
+            <label htmlFor='username'>Name: </label>
+            <input type="text" name='username' onChange={(e) => setUsername(e.target.value)}/>
+            <button onClick={handleSubmit}>Submit</button>
+          </form>
+        </div>
+      </div>
+      <div className='card-container' style={{ visibility: isLeaderboardVisible ? 'visible' : 'hidden' }}>
+        <div className='score-card'>
+          <div>Leaderboard</div>
+          <table>
+            <tr>
+              <th>Rank</th>
+              <th>Name</th>
+              <th>Time</th>
+            </tr>
+            {leaderboard.map((score, index) => (
+              <tr>
+                <td>{index + 1}</td>
+                <td>{score.userId}</td>
+                <td>{formatTime(score.score)}</td>
+              </tr>
+            ))}
+          </table>
+          <button onClick={() => setIsLeaderboardVisible(false)}>Close</button>
+        </div>
+      </div>
+      
         <div className="navbar">
           <div className="navbar-item">
             <h1 className="navbar-title">Where's that Pokemon?</h1>
@@ -218,7 +294,7 @@ function App() {
             <div id='timer'>
                 {formatTime(timeElapsed)} 
             </div> 
-            <button className="navbar-button">Leaderboard</button>
+            <button className="navbar-button" onClick={() => setIsLeaderboardVisible(true)}>Leaderboard</button>
           </div>
         </div>
         
